@@ -1,0 +1,23 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:8806/reggie?serverTimezone=UTC
+    username: root
+    password: Lan20011026
+    type: com.alibaba.druid.pool.DruidDataSource
+
+reggie:
+  path: E:\\reggie\\img\\
+
+
+
+
+
+
+
+
+
+
+

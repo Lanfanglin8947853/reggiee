@@ -12,6 +12,7 @@ import com.example.demo.demos.web.blog.util.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,7 +66,9 @@ public class SetmealController {
      * 套餐管理的添加
      */
     @PostMapping
-    public Result<String> save(@RequestBody SetmealDto setmealDto) {//接收前端传过来的数据
+    //设置allEntries为true，清空缓存名称为setmealCache的所有缓存
+    @CacheEvict(value = "setmealCache", allEntries = true)
+    public Result<String> save(@RequestBody SetmealDto setmealDto) {
         log.info("套餐信息：{}", setmealDto);
         setmealService.saveWithDish(setmealDto);
         return Result.success("套餐添加成功");
@@ -96,16 +99,17 @@ public class SetmealController {
      * 套餐管理的修改
      */
     @PutMapping
+    //设置allEntries为true，清空缓存名称为setmealCache的所有缓存
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<Setmeal> updateWithDish(@RequestBody SetmealDto setmealDto) {
         List<SetmealDish> setmealDishes = setmealDto.getSetmealDishes();
         Long setmealId = setmealDto.getId();
         //先根据id把setmealDish表中对应套餐的数据删了
         LambdaQueryWrapper<SetmealDish> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(SetmealDish::getSetmealId,setmealId);
+        queryWrapper.eq(SetmealDish::getSetmealId, setmealId);
         setmealDishService.remove(queryWrapper);
         //然后在重新添加
-        setmealDishes = setmealDishes.stream().map((item) ->{
-            //这属性没有，需要我们手动设置一下
+        setmealDishes = setmealDishes.stream().map((item) -> {
             item.setSetmealId(setmealId);
             return item;
         }).collect(Collectors.toList());
@@ -132,6 +136,8 @@ public class SetmealController {
      * 套餐批量启售/停售
      */
     @PostMapping("/status/{status}")
+    //设置allEntries为true，清空缓存名称为setmealCache的所有缓存
+    @CacheEvict(value = "setmealCache", allEntries = true)
     public Result<String> status(@PathVariable String status, @RequestParam List<Long> ids) {
         LambdaUpdateWrapper<Setmeal> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.in(Setmeal::getId, ids);
@@ -143,13 +149,16 @@ public class SetmealController {
 
     @GetMapping("/list")
     @Cacheable(value = "setmealCache", key = "#setmeal.categoryId + '_' + #setmeal.status")
-    public Result<List<Setmeal>> list(Setmeal setmeal){
+    public Result<List<Setmeal>> list(Setmeal setmeal) {
+        //条件构造器
         LambdaQueryWrapper<Setmeal> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(setmeal.getCategoryId()!=null,Setmeal::getCategoryId,setmeal.getCategoryId());
-        queryWrapper.eq(setmeal.getStatus()!=null,Setmeal::getStatus,setmeal.getStatus());
+        //添加条件
+        queryWrapper.eq(setmeal.getCategoryId() != null, Setmeal::getCategoryId, setmeal.getCategoryId());
+        queryWrapper.eq(setmeal.getStatus() != null, Setmeal::getStatus, 1);
+        //排序
         queryWrapper.orderByDesc(Setmeal::getUpdateTime);
-        List<Setmeal> list = setmealService.list(queryWrapper);
-        return Result.success(list);
+        List<Setmeal> setmealList = setmealService.list(queryWrapper);
+        return Result.success(setmealList);
     }
 
     @GetMapping("/dish/{id}")

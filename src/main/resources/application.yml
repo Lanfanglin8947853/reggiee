@@ -7,7 +7,14 @@ spring:
     username: root
     password: Lan20011026
     type: com.alibaba.druid.pool.DruidDataSource
-
+  redis:
+    host: localhost
+    password:
+    port: 6379
+    database: 0
+  cache:
+    redis:
+      time-to-live: 3600000 #设置存活时间为一小时，如果不设置，则一直存活
 reggie:
   path: E:\\reggie\\img\\
 
